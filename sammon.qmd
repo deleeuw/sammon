@@ -74,22 +74,27 @@ appreciated, but is not required. The files can be found at
 
 # Sammon Loss
 
-In engineering and computer science *Sammon mapping* is a popular multidimensional scaling (MDS) method. The technique was introduced in @sammon_69. It was originally intended to map points in a higher dimensional
-Euclidean space to points in a lower dimensional Euclidean space by approximating the higher-dimensional distances by the lower-dimensional ones. The MASS package for R implemented the sammon()
+In engineering and computer science *Sammon mapping* is a popular multidimensional scaling (MDS) method. The technique was introduced in @sammon_69. It was originally intended to map points from a higher-dimensional
+Euclidean space into points in a lower-dimensional Euclidean space by approximating the given higher dimensional distances by best-fitting lower dimensional ones. The MASS package for R implemented the sammon()
 function, which generalizes the original idea by allowing the higher-dimensional distances to be
 replaced by any positive symmetric matrix of dissimilarities. This was again generalized in the 
 packages stops (@rusch_mair_hornik_23) and smacofx (@rusch_deleeuw_chen_mair_25) where optimization
 is over low-dimensional configations and over power transforms of the dissimilarities.
-\begin{equation}
-\sigma(X,\Delta)=\frac{1}{\mathop{\sum\sum}_{1\leq i<j\leq n}w_{ij}\delta_{ij}}\mathop{\sum\sum}_{1\leq i<j\leq n}w_{ij}\frac{(\delta_{ij}-d_{ij}(X))^2}{\delta_{ij}}
-\end{equation}
-If we minimize over $X$ for fixed $\Delta$ this is a standard metric scaling problem with weights
-$\smash{\delta_{ij}^{-1}}$.
 
-Minimizing over $\Delta$, satisfying the ordinal constraints, for fixed $X$ is more complicated.
-First, use the fact that $\omega(\lambda X,\lambda\Delta)=\omega(X,\Delta)$
+The Sammon loss function is
 \begin{equation}
-\min_X\sigma(X,\Delta)=\min_X \omega(X,\lambda\Delta),
+\sigma(X,\Delta)=\frac{1}{\mathop{\sum\sum}_{1\leq i<j\leq n}w_{ij}\delta_{ij}}\mathop{\sum\sum}_{1\leq i<j\leq n}w_{ij}\frac{(\delta_{ij}-d_{ij}(X))^2}{\delta_{ij}}.\label{eq-loss}
+\end{equation}
+Without loss of generality we assume the weights $w_{ij}$ add up to one.
+
+In metric (ratio) MDS we minimize over $X$ for fixed $\Delta$. This is a standard metric scaling problem with weights $\smash{w_{ij}\delta_{ij}^{-1}}$. We use majorization steps to decrease loss. This is identical
+to the ratio sammon option in smacofx.
+In the non-metric case we use alternating least squares, i.e. we alternate majorization steps with 
+minimizing over $\Delta$, satisfying the ordinal constraints, for fixed $X$.
+As far as I know this has not been implemented before, and is somewhat non-standard.
+First, use the fact that $\sigma(\lambda X,\lambda\Delta)=\sigma(X,\Delta)$
+\begin{equation}
+\min_X\sigma(X,\Delta)=\min_X \sigma(X,\lambda\Delta),
 \end{equation}
 i.e. the problem is homogeneous of degree zero in $\Delta$. Thus we can require without loss of generality
 that
@@ -228,7 +233,7 @@ $\tilde y$ sequence we apply @lem-fine (and if $r=1$ we apply @lem-one). We then
 expand each block again to a length equal to the number of averaged elements.
 :::
 
-A small example illustrates this. Start with $y$ equal to
+A small example illustrates the PAVA variationb. Start with $y$ equal to
 $(1,2,3,1,2,3,5,1)$ and $w$ equal to $(1,1,1,1,1,1,1,1)$.
 Merge elements 3 and 4 to get $y=(1,2,2,2,3,5,1)$
 and $w=(1,1,2,1,1,1,1)$. Now merge elements 2, 3, and 4
