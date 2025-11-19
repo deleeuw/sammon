@@ -1,0 +1,246 @@
+---
+title: Nonmetric Sammon Mapping
+author: 
+    - name: Jan de Leeuw
+      orcid: 0000-0003-1420-1797
+      email: jan@deleeuwpdx.net
+      affiliation: 
+        - name: University of California Los Angeles
+          city: Los Angeles
+          state: CA
+          url: www.ucla.edu
+      license: "CC0"
+date: last-modified
+date-format: long
+bibliography: [mypubs.bib, total.bib]
+number-sections: true
+pdf-engine: lualatex
+keep-tex: true
+format:
+   pdf:
+    fontsize: 12pt
+    include-in-header: 
+     - preamble.tex
+    keep-tex: true
+    link-citations: true
+    documentclass: scrartcl
+    number-sections: true
+   html:
+    fontsize: 12pt
+    include-in-header: 
+     - preamble.css
+    keep-md: true
+    number-sections: true
+toc: true
+toc-depth: 3
+editor: source
+papersize: letter
+graphics: true
+link-citations: true
+mainfont: Times New Roman
+abstract: TBD
+---
+
+```{r loadpackages, echo = FALSE}
+suppressPackageStartupMessages(library(knitr, quietly = TRUE))
+suppressPackageStartupMessages(library(tinytex, quietly = TRUE))
+suppressPackageStartupMessages(library(CVXR, quietly = TRUE))
+```
+```{r matrixprint, echo = FALSE}
+matrixPrint <- function(x,
+                        digits = 6,
+                        width = 8,
+                        format = "f",
+                        flag = "+") {
+  print(noquote(
+    formatC(
+      x,
+      digits = digits,
+      width = width,
+      format = format,
+      flag = flag
+    )
+  ))
+}
+```
+
+**Note:** This is a working manuscript which will be expanded/updated
+frequently. All suggestions for improvement are welcome. All Rmd, tex,
+html, pdf, R, and C files are in the public domain. Attribution will be
+appreciated, but is not required. The files can be found at
+<https://github.com/deleeuw/sammon> 
+
+\sectionbreak
+
+# Sammon Loss
+
+In engineering and computer science *Sammon mapping* is a popular multidimensional scaling (MDS) method. The technique was introduced in @sammon_69. It was originally intended to map points in a higher dimensional
+Euclidean space to points in a lower dimensional Euclidean space by approximating the higher-dimensional distances by the lower-dimensional ones. The MASS package for R implemented the sammon()
+function, which generalizes the original idea by allowing the higher-dimensional distances to be
+replaced by any positive symmetric matrix of dissimilarities. This was again generalized in the 
+packages stops (@rusch_mair_hornik_23) and smacofx (@rusch_deleeuw_chen_mair_25) where optimization
+is over low-dimensional configations and over power transforms of the dissimilarities.
+\begin{equation}
+\sigma(X,\Delta)=\frac{1}{\mathop{\sum\sum}_{1\leq i<j\leq n}w_{ij}\delta_{ij}}\mathop{\sum\sum}_{1\leq i<j\leq n}w_{ij}\frac{(\delta_{ij}-d_{ij}(X))^2}{\delta_{ij}}
+\end{equation}
+If we minimize over $X$ for fixed $\Delta$ this is a standard metric scaling problem with weights
+$\smash{\delta_{ij}^{-1}}$.
+
+Minimizing over $\Delta$, satisfying the ordinal constraints, for fixed $X$ is more complicated.
+First, use the fact that $\omega(\lambda X,\lambda\Delta)=\omega(X,\Delta)$
+\begin{equation}
+\min_X\sigma(X,\Delta)=\min_X \omega(X,\lambda\Delta),
+\end{equation}
+i.e. the problem is homogeneous of degree zero in $\Delta$. Thus we can require without loss of generality
+that
+\begin{equation}
+\mathop{\sum\sum}_{1\leq i<j\leq n}w_{ij}\delta_{ij}=1.
+\end{equation}
+With this normalization we have
+\begin{equation}
+\sigma(X,\Delta)=1-2\mathop{\sum\sum}_{1\leq i<j\leq n}w_{ij}d_{ij}(X)+\mathop{\sum\sum}_{1\leq i<j\leq n}w_{ij}\frac{d_{ij}^2(X)}{\delta_{ij}}
+\end{equation}
+Thus minimizing $\omega$ for fixed $X$ over non-negative, isotone and normalized $\Delta$ means minimizing
+the third term on the right. And this means minimizing a separable, differentiable, and strictly convex 
+function over a polyhedral convex set.
+
+
+# PAVA for Sammon
+
+Define the extended real valued function $f$ equal to
+\begin{equation}
+f(x):=\sum_{i=1}^nw_i\frac{y_i}{x_i}
+\end{equation}
+if $x_i>0$ for all $i$, and to $+\infty$ otherwise. Thus the effective domain $\text{dom}(f)$ is the interior of the positive orthant.  
+
+Problem $\mathfrak{P}$ is defined as minimization of $f$ over the intersection of the polyhedral convex cone $\mathcal{K}$ defined by $0<x_1\leq\cdots\leq x_n$ and the affine set $\mathcal{A}$ defined by $w'x=1$. We assume that all $w_i$ and all $y_i$ are positive, and that the $w_i$ add up to one. In the context of Sammon mapping the $y_i$ are squared distances and the $x_i$ are the transformed dissimilarities. 
+
+The first and second partials of $f$ are
+\begin{align}
+\mathcal{D}_if(x)&=-w_i\frac{y_i}{x_i^2},\\
+\mathcal{D}_{ii}f(x)&=2w_i\frac{y_i}{x_i^3},
+\end{align}
+and $\mathcal{D}_{ik}f(x)=0$ if $i\neq k$. This shows $f$ is convex and twice differentiable on $\text{dom}(f)$, and thus on $\mathcal{K}\cap\mathcal{A}$.
+
+First some preliminary results.
+
+::: {#lem-bound}
+\begin{equation}
+\min_{x\in\mathcal{K}\cap\mathcal{A}}f(x)\leq w'y
+\end{equation}
+:::
+
+
+::: {.proof}
+The vector $x$ with $x_i=1$ for all $i$ is in $\mathcal{K}\cap\mathcal{A}$. 
+:::
+
+It follows from @lem-bound that we can add the constraint $f(x)\leq w'y$ to the minimization problem and still have the same minimum and minimizer.
+
+::: {#lem-fine}
+Suppose $y_1\leq\cdots\leq y_n$. Then
+\begin{equation}
+\overline x_i= \frac{\sqrt{y_i}}{\sum_{k=1}^nw_k\sqrt{y_k}}.\label{eq-well}
+\end{equation}
+:::
+::: {.proof}
+The necessary conditions for a minimum of $f$ on $\mathcal{A}$ are
+\begin{equation}
+-w_i\frac{y_i}{x_i^2}=\lambda w_i,\label{eq-grad}
+\end{equation}
+for all $i$, together with the side condition $w'x=1$. From \eqref{eq-grad} it follows that 
+the solution $\overline x$ must be proportional to $\sqrt{y}$, where the square 
+root can have either sign.
+Of the $2^n$ solutions only one is in the effective domain of $f$, the one for which all
+all square roots are taken with a positive sign. This solution is also in $\mathcal{K}$.
+Applying the side condition gives \eqref{eq-well}.
+:::
+
+The next rather trivial lemma deals with the case $n=1$, in which $w,x$ and $y$ are one-element vectors,
+which identify with the corresponding scalars.
+
+::: {#lem-one}
+If $n=1$ then the minimizer $\overline x$ is equal to one and the minimum is $y$.
+:::
+::: {.proof}
+$w$ adds up to one, so $w=1$. Also $wx$ must be one, so $\overline x=1$.
+:::
+
+The following theorem is of prime importance, because it shows problem $\mathfrak{P}$ can be solved with a  with a variation of the Pool Adjacent Violaters Algorithm (PAVA). For the details on PAVA, see for 
+example @deleeuw_hornik_mair_A_09.
+
+::: {#thm-pava}
+Suppose $\overline{x}$ is the optimum solution. If $y_i\geq y_{i+1}$ then $\overline{x}_i=\overline{x}_{i+1}$.
+:::
+::: {.proof}
+We show that $y_i\geq y_{i+1}$ and $\overline{x}_i<\overline{x}_{i+1}$ leads to a contradiction. A
+necessary and sufficient condition for $\overline x$ to be the optimum solution is
+\begin{equation}
+(x-\overline x)'\mathcal{D}f(\overline x)=-\sum_{i=1}^n w_i\frac{y_i}{\overline x_i^2}(x_i-\overline x_i)=f(\overline x)-\sum_{i=1}^n w_i\frac{y_i}{\overline x_i^2}x_i\geq 0
+\end{equation}
+for all $x\in\mathcal{K}\cap\mathcal{A}$ (@hiriart-urruty_lemarechal_93a, Theorem 1.1.1, page 293).
+
+Now suppose $\overline{x}_i<\overline{x}_{i+1}$. Then for $\epsilon>0$ small enough
+\begin{equation}
+z=\overline{x}+\epsilon\left(\frac{e_i}{w_i}-\frac{e_{i+1}}{w_{i+1}}\right)\label{eq-perturb}
+\end{equation}
+is also in $\mathcal{K}\cap\mathcal{A}$. In \eqref{eq-perturb} we add a small amount to $\overline x_i$
+and subtract a small amount from $\overline x_{i+1}$, while leaving all other elements of 
+$\overline x$ unperturbed. Since
+\begin{equation}
+\sum_{i=1}^n w_i\frac{y_i}{\overline x_i^2}z_i=f(\overline x)+\epsilon\left(\frac{y_i}{\overline x_i^2}-\frac{y_{i+1}}{\overline x_{i+1}^2}\right)
+\end{equation}
+we must have
+\begin{equation}
+\frac{y_i}{\overline x_i^2}\leq\frac{y_{i+1}}{\overline x_{i+1}^2}
+\end{equation}
+But $y_i\geq y_{i+1}$ and $\overline x_i<\overline x_{i+1}$ implies
+\begin{equation}
+\frac{y_i}{\overline x_i^2}>\frac{y_{i+1}}{\overline x_{i+1}^2}
+\end{equation}
+and thus $\overline x$ cannot be the optimal solution.
+:::
+
+@thm-pava can be used to replace problem $\mathfrak{P}$ of size $n$ with a problem $\tilde{\mathfrak{P}}$of the 
+same type, but of size $n-1$. If $y_i\geq y_{i+1}$ we remove these two $y$-values and put the single value 
+$$
+\tilde y_i:=\frac{w_iy_i+w_{i+1}y_{i+1}}{w_i+w_{i+1}}
+$$
+in their place. This new value gets the weight $\tilde w_i:=w_i+w_{i+1}$. 
+
+::: {#thm-monreg}
+Suppose $\hat x$ solves the monotone regression problem for the weighted least squares norm
+$$
+\hat x:=\mathop{\text{argmin}}_{x_1\leq\cdots\leq x_n}(x-y)'W(x-y)
+$$
+then
+$$
+\overline x_i=\frac{\sqrt{\hat x_i}}{\sum_{k=1}^nw_k\sqrt{\hat x_k}}
+$$
+solves problem $\mathfrak{P}$.
+:::
+::: {.proof}
+We use @thm-pava repeatedly until we have a problem $\mathfrak{P}$ of size $r$ for which
+$\tilde y_1<\cdots<\tilde y_r$. We can use the same sequence of pooling adjacent
+violators as in least squares monotone regression, and we find the same weighted average pooled
+values in each step. When we have reduced the problem to a strictly increasing
+$\tilde y$ sequence we apply @lem-fine (and if $r=1$ we apply @lem-one). We then
+expand each block again to a length equal to the number of averaged elements.
+:::
+
+A small example illustrates this. Start with $y$ equal to
+$(1,2,3,1,2,3,5,1)$ and $w$ equal to $(1,1,1,1,1,1,1,1)$.
+Merge elements 3 and 4 to get $y=(1,2,2,2,3,5,1)$
+and $w=(1,1,2,1,1,1,1)$. Now merge elements 2, 3, and 4
+to get $y=(1,2,3,5,1)$ and $w=(1,4,1,1,1)$. Merge 4 and 5
+to get $y=(1,2,3,3)$ and $w=(1,4,1,2)$ and finally merge
+3 and 4 to get $y=(1,2,3)$ and $w=(1,4,3)$. Thus
+$$
+\overline x=\frac{1}{1+4\sqrt{2}+3\sqrt{3}}(1, \sqrt{2}, \sqrt{2}, \sqrt{2}, \sqrt{2}, \sqrt{3}, \sqrt{3}, \sqrt{3})
+$$
+
+
+
+\sectionbreak
+
+# References
