@@ -74,7 +74,7 @@ appreciated, but is not required. The files can be found at
 
 # Sammon Loss
 
-In engineering and computer science *Sammon mapping* is a popular multidimensional scaling (MDS) method. The technique was introduced in @sammon_69. It was originally intended to map points from a higher-dimensional
+In engineering and computer science *Sammon Mapping* is a popular multidimensional scaling (MDS) method. The technique was introduced in @sammon_69. It was originally intended to map points from a higher-dimensional
 Euclidean space into points in a lower-dimensional Euclidean space by approximating the given higher dimensional distances by best-fitting lower dimensional ones. The MASS package for R implemented the sammon()
 function, which generalizes the original idea by allowing the higher-dimensional distances to be
 replaced by any positive symmetric matrix of dissimilarities. This was again generalized in the 
@@ -110,7 +110,7 @@ the third term on the right. And this means minimizing a separable, differentiab
 function over a polyhedral convex set.
 
 
-# PAVA for Sammon
+# PAVA for Sammon Mapping
 
 Define the extended real valued function $f$ equal to
 \begin{equation}
@@ -118,7 +118,7 @@ f(x):=\sum_{i=1}^nw_i\frac{y_i}{x_i}
 \end{equation}
 if $x_i>0$ for all $i$, and to $+\infty$ otherwise. Thus the effective domain $\text{dom}(f)$ is the interior of the positive orthant.  
 
-Problem $\mathfrak{P}$ is defined as minimization of $f$ over the intersection of the polyhedral convex cone $\mathcal{K}$ defined by $0<x_1\leq\cdots\leq x_n$ and the affine set $\mathcal{A}$ defined by $w'x=1$. We assume that all $w_i$ and all $y_i$ are positive, and that the $w_i$ add up to one. In the context of Sammon mapping the $y_i$ are squared distances and the $x_i$ are the transformed dissimilarities. 
+Problem $\mathfrak{P}$ is defined as minimization of $f$ over the intersection of the polyhedral convex cone $\mathcal{K}$ defined by $0<x_1\leq\cdots\leq x_n$ and the affine set $\mathcal{A}$ defined by $w'x=1$. We assume that all $w_i$ and all $y_i$ are positive, and that the $w_i$ add up to one. In the context of Sammon Mapping the $y_i$ are squared distances and the $x_i$ are the transformed dissimilarities. 
 
 The first and second partials of $f$ are
 \begin{align}
@@ -233,7 +233,7 @@ $\tilde y$ sequence we apply @lem-fine (and if $r=1$ we apply @lem-one). We then
 expand each block again to a length equal to the number of averaged elements.
 :::
 
-A small example illustrates the PAVA variationb. Start with $y$ equal to
+A small example illustrates the PAVA variation. Start with $y$ equal to
 $(1,2,3,1,2,3,5,1)$ and $w$ equal to $(1,1,1,1,1,1,1,1)$.
 Merge elements 3 and 4 to get $y=(1,2,2,2,3,5,1)$
 and $w=(1,1,2,1,1,1,1)$. Now merge elements 2, 3, and 4
@@ -243,8 +243,12 @@ to get $y=(1,2,3,3)$ and $w=(1,4,1,2)$ and finally merge
 $$
 \overline x=\frac{1}{1+4\sqrt{2}+3\sqrt{3}}(1, \sqrt{2}, \sqrt{2}, \sqrt{2}, \sqrt{2}, \sqrt{3}, \sqrt{3}, \sqrt{3})
 $$
+Remember that in the context of Sammon Mapping the least squares monotone regression has to be done on the
+squared distances.
 
+# Code 
 
+# Examples
 
 \sectionbreak
 

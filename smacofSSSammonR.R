@@ -44,7 +44,6 @@ smacofSSSammonR <- function(theData,
   for (k in 1:ndat) {
     dold[k] <- sqrt(sum((xold[iind[k], ] - xold[jind[k], ])^2))
   }
-  #sini <- sum(wght * dhat) + sum((wght / dhat) * dold^2) - 2 * sum(wght * dold) 
   labd <- sum(wght * dold) / sum((wght / dhat) * dold^2)
   xold <- labd * xold
   dold <- labd * dold
