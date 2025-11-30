@@ -1,5 +1,5 @@
 ---
-title: Nonmetric Sammon Mapping
+title: Metric/Nonmetric Sammon Mapping
 author: 
     - name: Jan de Leeuw
       orcid: 0000-0003-1420-1797
@@ -72,20 +72,53 @@ appreciated, but is not required. The files can be found at
 
 \sectionbreak
 
-# Sammon Loss
+# Introduction
 
 In engineering and computer science *Sammon Mapping* is a popular multidimensional scaling (MDS) method. The technique was introduced in @sammon_69. It was originally intended to map points from a higher-dimensional
-Euclidean space into points in a lower-dimensional Euclidean space by approximating the given higher dimensional distances by best-fitting lower dimensional ones. The MASS package for R implemented the sammon()
+Euclidean space into points in a lower-dimensional Euclidean space by approximating the given higher dimensional distances by best-fitting lower dimensional ones. The *MASS* package for R implemented the *sammon()*
 function, which generalizes the original idea by allowing the higher-dimensional distances to be
-replaced by any positive symmetric matrix of dissimilarities. This was again generalized in the 
-packages stops (@rusch_mair_hornik_23) and smacofx (@rusch_deleeuw_chen_mair_25) where optimization
+replaced by any positive symmetric matrix of dissimilarities. This was again generalized in the packages *stops* (@rusch_mair_hornik_23) and *smacofx* (@rusch_deleeuw_chen_mair_25) where optimization
 is over low-dimensional configations and over power transforms of the dissimilarities.
 
 The Sammon loss function is
 \begin{equation}
 \sigma(X,\Delta)=\frac{1}{\mathop{\sum\sum}_{1\leq i<j\leq n}w_{ij}\delta_{ij}}\mathop{\sum\sum}_{1\leq i<j\leq n}w_{ij}\frac{(\delta_{ij}-d_{ij}(X))^2}{\delta_{ij}}.\label{eq-loss}
 \end{equation}
-Without loss of generality we assume the weights $w_{ij}$ add up to one.
+
+The metric MDS problem we address in this paper is minimizing \eqref{eq-loss} over
+the $n\times p$ *configurations* $X$. In the non-metric case we minimize in addition over the
+symmetric non-negative and hollow matrices $\Delta:=\{\delta_{ij}\}$, where the $\delta_{ij}$ are
+monotone with the given dissimilarities. 
+
+
+
+# Properties
+
+The usual stress loss function in smacof, due originally to @kruskal_64a and @kruskal_64b, is
+$$
+\sigma(X,\Delta)=\frac{\mathop{\sum\sum}_{1\leq i<j\leq n}w_{ij}(\delta_{ij}-d_{ij}(X))^2}{\mathop{\sum\sum}_{1\leq i<j\leq n}w_{ij}\delta_{ij}^2}.\label{eq-stress}
+$$
+If we compare \eqref{eq-loss} and \eqref{eq-stress} we see that in Kruskal's stress
+the sum of the squared residuals is normalized by dividing by the sum of the squared
+dissimilarities. This means minimum stress is between zero and one, and it also prevents
+us from considering the trivial zero-residual solution $X=0$ and $\Delta=0$. In Sammon
+loss each residual is normalized separately, based on the idea that large dissimilarities
+are somehow less reliable or stable and should be downweighted.
+
+
+
+
+
+$$
+\sqrt{d_{ij}(X)}-\sqrt{\delta_{ij}}\approx\frac{1}{\sqrt{\delta_{ij}}}(d_{ij}(X)-\delta_{ij})
+$$
+and thus
+$$
+\sum w_{ij}(\sqrt{\delta_{ij}}-\sqrt{d_{ij}(X)})^2\approx\sum w_{ij}\frac{(\delta_{ij}-d_{ij}(X))^2}{\delta_{ij}}
+$$
+More robust.
+
+# Algorithm
 
 In metric (ratio) MDS we minimize over $X$ for fixed $\Delta$. This is a standard metric scaling problem with weights $\smash{w_{ij}\delta_{ij}^{-1}}$. We use majorization steps to decrease loss. This is identical
 to the ratio sammon option in smacofx.
@@ -109,16 +142,13 @@ Thus minimizing $\omega$ for fixed $X$ over non-negative, isotone and normalized
 the third term on the right. And this means minimizing a separable, differentiable, and strictly convex 
 function over a polyhedral convex set.
 
-
-# PAVA for Sammon Mapping
-
 Define the extended real valued function $f$ equal to
 \begin{equation}
 f(x):=\sum_{i=1}^nw_i\frac{y_i}{x_i}
 \end{equation}
 if $x_i>0$ for all $i$, and to $+\infty$ otherwise. Thus the effective domain $\text{dom}(f)$ is the interior of the positive orthant.  
 
-Problem $\mathfrak{P}$ is defined as minimization of $f$ over the intersection of the polyhedral convex cone $\mathcal{K}$ defined by $0<x_1\leq\cdots\leq x_n$ and the affine set $\mathcal{A}$ defined by $w'x=1$. We assume that all $w_i$ and all $y_i$ are positive, and that the $w_i$ add up to one. In the context of Sammon Mapping the $y_i$ are squared distances and the $x_i$ are the transformed dissimilarities. 
+Problem $\mathbf{P}$ is defined as minimization of $f$ over the intersection of the polyhedral convex cone $\mathcal{K}$ defined by $0<x_1\leq\cdots\leq x_n$ and the affine set $\mathcal{A}$ defined by $w'x=1$. We assume that all $w_i$ and all $y_i$ are positive, and that the $w_i$ add up to one. In the context of Sammon Mapping the $y_i$ are squared distances and the $x_i$ are the transformed dissimilarities. 
 
 The first and second partials of $f$ are
 \begin{align}
@@ -171,7 +201,7 @@ If $n=1$ then the minimizer $\overline x$ is equal to one and the minimum is $y$
 $w$ adds up to one, so $w=1$. Also $wx$ must be one, so $\overline x=1$.
 :::
 
-The following theorem is of prime importance, because it shows problem $\mathfrak{P}$ can be solved with a  with a variation of the Pool Adjacent Violaters Algorithm (PAVA). For the details on PAVA, see for 
+The following theorem is of prime importance, because it shows problem $\mathbf{P}$ can be solved with a  with a variation of the Pool Adjacent Violaters Algorithm (PAVA). For the details on PAVA, see for 
 example @deleeuw_hornik_mair_A_09.
 
 ::: {#thm-pava}
@@ -206,7 +236,7 @@ But $y_i\geq y_{i+1}$ and $\overline x_i<\overline x_{i+1}$ implies
 and thus $\overline x$ cannot be the optimal solution.
 :::
 
-@thm-pava can be used to replace problem $\mathfrak{P}$ of size $n$ with a problem $\tilde{\mathfrak{P}}$of the 
+@thm-pava can be used to replace problem $\mathbf{P}$ of size $n$ with a problem $\tilde{\mathbf{P}}$of the 
 same type, but of size $n-1$. If $y_i\geq y_{i+1}$ we remove these two $y$-values and put the single value 
 $$
 \tilde y_i:=\frac{w_iy_i+w_{i+1}y_{i+1}}{w_i+w_{i+1}}
@@ -222,10 +252,10 @@ then
 $$
 \overline x_i=\frac{\sqrt{\hat x_i}}{\sum_{k=1}^nw_k\sqrt{\hat x_k}}
 $$
-solves problem $\mathfrak{P}$.
+solves problem $\mathbf{P}$.
 :::
 ::: {.proof}
-We use @thm-pava repeatedly until we have a problem $\mathfrak{P}$ of size $r$ for which
+We use @thm-pava repeatedly until we have a problem $\mathbf{P}$ of size $r$ for which
 $\tilde y_1<\cdots<\tilde y_r$. We can use the same sequence of pooling adjacent
 violators as in least squares monotone regression, and we find the same weighted average pooled
 values in each step. When we have reduced the problem to a strictly increasing
@@ -243,13 +273,37 @@ to get $y=(1,2,3,3)$ and $w=(1,4,1,2)$ and finally merge
 $$
 \overline x=\frac{1}{1+4\sqrt{2}+3\sqrt{3}}(1, \sqrt{2}, \sqrt{2}, \sqrt{2}, \sqrt{2}, \sqrt{3}, \sqrt{3}, \sqrt{3})
 $$
-Remember that in the context of Sammon Mapping the least squares monotone regression has to be done on the
-squared distances.
+Remember that in the context of Sammon Mapping the least squares monotone regression has to be done on the squared distances.
 
-# Code 
 
 # Examples
 
+```{r compplotE, fig.align = "center", fig.width = 8, fig.height = 8, echo = FALSE}
+par(pty="s")
+setwd("/Users/deleeuw/Desktop/recents/sammon")
+source("smacofSSSammonC.R")
+source("../smacofFlat/smacofSSdata/ekmanData.R")
+h1 <- smacofSSSammonC(ekmanData, ordinal = TRUE, verbose = FALSE)
+smacofShepardPlot(h1, main = "Shepard Plot Ekman, Sammon")
+dyn.unload("smacofSSSammon.so")
+setwd("/Users/deleeuw/Desktop/recents/smacofFlat")
+source("smacofSS.R")
+h2 <- smacofSS(ekmanData, ordinal = TRUE, verbose = FALSE)
+smacofShepardPlot(h2, main = "Shepard Plot Ekman, Kruskal")
+```
+```{r compplotM, fig.align = "center", fig.width = 8, fig.height = 8, echo = FALSE}
+par(pty="s")
+setwd("/Users/deleeuw/Desktop/recents/sammon")
+source("smacofSSSammonC.R")
+source("../smacofFlat/smacofSSdata/morseData.R")
+h1 <- smacofSSSammonC(morseData, ordinal = TRUE, verbose = FALSE)
+smacofShepardPlot(h1, main = "Shepard Plot Morse, Sammon")
+dyn.unload("smacofSSSammon.so")
+setwd("/Users/deleeuw/Desktop/recents/smacofFlat")
+source("smacofSS.R")
+h2 <- smacofSS(morseData, ordinal = TRUE, verbose = FALSE)
+smacofShepardPlot(h2, main = "Shepard Plot Morse, Kruskal")
+```
 \sectionbreak
 
 # References
