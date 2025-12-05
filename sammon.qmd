@@ -45,6 +45,7 @@ abstract: TBD
 suppressPackageStartupMessages(library(knitr, quietly = TRUE))
 suppressPackageStartupMessages(library(tinytex, quietly = TRUE))
 suppressPackageStartupMessages(library(CVXR, quietly = TRUE))
+suppressPackageStartupMessages(library(microbenchmark, quietly = TRUE))
 ```
 ```{r matrixprint, echo = FALSE}
 matrixPrint <- function(x,
@@ -62,6 +63,13 @@ matrixPrint <- function(x,
     )
   ))
 }
+```
+
+```{r loadfiles, echo = FALSE}
+source("smacofSSSammonC.R")
+source("smacofSSSammonR.R")
+source("../smacofFlat/smacofSSData/ekmanData.R")
+source("../smacofFlat/smacofSSData/morseData.R")
 ```
 
 **Note:** This is a working manuscript which will be expanded/updated
@@ -95,9 +103,9 @@ monotone with the given dissimilarities.
 # Properties
 
 The usual stress loss function in smacof, due originally to @kruskal_64a and @kruskal_64b, is
-$$
+\begin{equation}
 \sigma(X,\Delta)=\frac{\mathop{\sum\sum}_{1\leq i<j\leq n}w_{ij}(\delta_{ij}-d_{ij}(X))^2}{\mathop{\sum\sum}_{1\leq i<j\leq n}w_{ij}\delta_{ij}^2}.\label{eq-stress}
-$$
+\end{equation}
 If we compare \eqref{eq-loss} and \eqref{eq-stress} we see that in Kruskal's stress
 the sum of the squared residuals is normalized by dividing by the sum of the squared
 dissimilarities. This means minimum stress is between zero and one, and it also prevents
@@ -106,16 +114,14 @@ loss each residual is normalized separately, based on the idea that large dissim
 are somehow less reliable or stable and should be downweighted.
 
 
-
-
-
-$$
-\sqrt{d_{ij}(X)}-\sqrt{\delta_{ij}}\approx\frac{1}{\sqrt{\delta_{ij}}}(d_{ij}(X)-\delta_{ij})
-$$
+If $\delta_{ij}$ and $d_{ij}(X)$ are close then
+\begin{equation}
+\sqrt{d_{ij}(X)}-\sqrt{\delta_{ij}}\approx\frac12\frac{1}{\sqrt{\delta_{ij}}}(d_{ij}(X)-\delta_{ij}),
+\end{equation}
 and thus
-$$
-\sum w_{ij}(\sqrt{\delta_{ij}}-\sqrt{d_{ij}(X)})^2\approx\sum w_{ij}\frac{(\delta_{ij}-d_{ij}(X))^2}{\delta_{ij}}
-$$
+\begin{equation}
+\sum w_{ij}\frac{(\delta_{ij}-d_{ij}(X))^2}{\delta_{ij}}\approx 4\sum w_{ij}(\sqrt{\delta_{ij}}-\sqrt{d_{ij}(X)})^2\label{eq-sqstress}
+\end{equation}
 More robust.
 
 # Algorithm
@@ -275,8 +281,80 @@ $$
 $$
 Remember that in the context of Sammon Mapping the least squares monotone regression has to be done on the squared distances.
 
-
 # Examples
+
+## Results
+
+```{r ekman, echo = FALSE}
+hen <- smacofSSSammonC(ekmanData, ordinal = FALSE, verbose = FALSE, eps = 1e-6)
+heo <- smacofSSSammonC(ekmanData, ordinal = TRUE, verbose = FALSE, eps = 1e-6)
+```
+Numerical elastic scaling takes `r hen$niter` iterations to arrive at stress `r formatC(hen$stress, digits = 10, format = "f")`. For ordinal
+we need `r heo$niter` iterations for stress `r formatC(heo$stress,digits = 10, format = "f")`. Since the ordinal fit is very good the
+sqrt-stress of \eqref{eq-sqstress} should be close to Sammon stress. It is `r formatC(4 * sum((sqrt(heo$dhat) - sqrt(heo$confdist))^2), digits = 10, format = "f")`.
+
+```{r morse, echo = FALSE}
+hmn <- smacofSSSammonC(morseData, ordinal = FALSE, verbose = FALSE, eps = 1e-6)
+hmo <- smacofSSSammonC(morseData, ordinal = TRUE, verbose = FALSE, eps = 1e-6)
+```
+
+For the Morse code data numerical elastic scaling takes `r hmn$niter` iterations to arrive at stress `r hmn$stress`, for ordinal we need `r hmo$niter` iterations for stress `r hmo$stress`. Because the fit is much worse than
+in the Ekman case we do not expect sqrt-stress to be close to Sammon stress. For the ordinal case final sqrt-stress is `r 4 * sum((sqrt(hmo$dhat) - sqrt(hmo$confdist))^2)`.
+
+## Timing
+
+The results of a comparison of the R and C implementations with microbenchmark (@mersmann_24) yields the times in microseconds in the following table.
+
+```{r  mekman, echo = FALSE, cache = TRUE}
+xinit <- smacofTorgerson(ekmanData, ndim = 2)$conf
+suppressWarnings(microbenchmark(
+  smacofSSSammonR(ekmanData, xinit = xinit, eps = 1e-6, itmax = 1000, ordinal = FALSE, weighted = FALSE, verbose = FALSE),
+  smacofSSSammonC(ekmanData, xinit = xinit, eps = 1e-6, itmax = 1000, ordinal = FALSE, weighted = FALSE, verbose = FALSE),
+  smacofSSSammonR(ekmanData, xinit = xinit, eps = 1e-6, itmax = 1000, ordinal = TRUE, weighted = FALSE, verbose = FALSE),
+  smacofSSSammonC(ekmanData, xinit = xinit, eps = 1e-6, itmax = 1000, ordinal = TRUE, weighted = FALSE, verbose = FALSE)))
+```
+
+```{r microekman, echo = FALSE}
+a<-matrix(c(40.13, 1.44, 163.52, 4.06, 41.66, 1.53, 168.14, 4.39, 
+            44.38, 1.60, 172.10, 4.57, 43.84, 1.60, 169.50, 4.46,
+            45.11, 1.64, 172.28, 4.71, 109.41, 1.81, 242.27, 7.37),
+          4, 6)
+colnames(a) <- c("min", "lq", "mean", "median", "uq", "max")
+row.names(a) <- c("R/Numerical", "C/Numerical", "R/Ordinal", "C/Ordinal")
+a
+```
+Using median times we see that that C version is about 40 times as fast as the R version.
+
+```{r mmorse, echo = FALSE, cache = TRUE}
+xinit <- smacofTorgerson(morseData, ndim = 2)$conf
+suppressWarnings(microbenchmark(
+  smacofSSSammonR(morseData, xinit = xinit, eps = 1e-6, itmax = 1000, ordinal = FALSE, weighted = FALSE, verbose = FALSE),
+  smacofSSSammonC(morseData, xinit = xinit, eps = 1e-6, itmax = 1000, ordinal = FALSE, weighted = FALSE, verbose = FALSE),
+  smacofSSSammonR(morseData, xinit = xinit, eps = 1e-6, itmax = 1000, ordinal = TRUE, weighted = FALSE, verbose = FALSE),
+  smacofSSSammonC(morseData, xinit = xinit, eps = 1e-6, itmax = 1000, ordinal = TRUE, weighted = FALSE, verbose = FALSE)))
+```
+
+Next, the timings for the Morse data.
+```{r micromorse, echo = FALSE}
+a<-matrix(c(80.71, 6.38, 711.81, 7.25,
+            85.50, 6.62, 744.80, 7.60,
+            92.21, 6.77, 767.76, 7.82, 
+            87.61, 6.71, 764.32, 7.74,
+            91.38, 6.80, 784.45, 7.83,
+            162.41, 10.96, 862.41, 11.35),
+          4, 6)
+colnames(a) <- c("min", "lq", "mean", "median", "uq", "max")
+row.names(a) <- c("R/Numerical", "C/Numerical", "R/Ordinal", "C/Ordinal")
+a
+```
+In the numerical case the C version is about 15 times as fast, in the ordinal case
+about 100 times. The huge difference in the ordinal case is likely due in large part to the different monotone regression routines used by the R and C programs.
+
+Of course these microbenchmark results depend on the default
+parameters of the programs (same in R and C), on the speed of my computer
+(Mac Mini with Apple M4 Pro, 64 GB of RAM, Tahoe 26.2, Apple clang 17.0.0), and on my programming habits (same in R and C).
+
+## Plots
 
 ```{r compplotE, fig.align = "center", fig.width = 8, fig.height = 8, echo = FALSE}
 par(pty="s")

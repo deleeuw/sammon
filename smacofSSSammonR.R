@@ -20,7 +20,7 @@ smacofSSSammonR <- function(theData,
                       ties = 1,
                       itmax = 1000,
                       eps = 1e-6,
-                      verbose = TRUE,
+                      verbose = FALSE,
                       ordinal = FALSE,
                       weighted = FALSE) {
   
