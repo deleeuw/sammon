@@ -1,11 +1,10 @@
-dyn.load("smacofSSSammon.so")
+dyn.load("smacofSS.so")
 
-source("smacofAuxiliaries.R")
 source("smacofDataUtilities.R")
 source("smacofPlots.R")
 source("smacofTorgerson.R")
 
-smacofSSSammonC <- function(theData,
+smacofSS <- function(theData,
                      ndim = 2,
                      xinit = NULL,
                      ties = 1,
@@ -22,6 +21,7 @@ smacofSSSammonC <- function(theData,
   xold <- xinit
   nobj <- theData$nobj
   ndat <- theData$ndat
+  itel <- 1
   iind <- theData$iind
   jind <- theData$jind
   dhat <- theData$delta
@@ -29,22 +29,25 @@ smacofSSSammonC <- function(theData,
   if (!weighted) {
     wght <- rep(1, ndat)
   }
-  dhat <- dhat / sum(wght * dhat)
+  dhat <- dhat / sqrt(sum(wght * dhat^2))
   blks <- theData$blocks
-  dold <- rep(0, ndat)
+  edis <- rep(0, ndat)
   for (k in 1:ndat) {
-    dold[k] <- sqrt(sum((xold[iind[k], ] - xold[jind[k], ])^2))
+    i <- iind[k]
+    j <- jind[k]
+    edis[k] <- sqrt(sum((xold[i, ] - xold[j, ])^2))
   }
-  labd <- sum(wght * dold) / sum((wght / dhat) * dold^2)
-  dold <- labd * dold
-  xold <- labd * xold
-  sold <- sum((wght / dhat) * (dhat - dold)^2 )
+  sdd <- sum(wght * edis^2)
+  sde <- sum(wght * dhat * edis)
+  lbd <- sde / sdd
+  edis <- lbd * edis
+  xold <- lbd * xold
+  sold <- sum(wght * (dhat - edis)^2)
   snew <- 0.0
   xold <- as.vector(xold)
   xnew <- xold
-  itel <- 1
   h <- .C(
-    "smacofSSSammonEngine",
+    "smacofSSEngine",
     nobj = as.integer(nobj),
     ndim = as.integer(ndim),
     ndat = as.integer(ndat),
@@ -63,7 +66,7 @@ smacofSSSammonC <- function(theData,
     jind = as.integer(jind - 1),
     blks = as.integer(blks),
     wght = as.double(wght),
-    edis = as.double(dold),
+    edis = as.double(edis),
     dhat = as.double(dhat),
     xold = as.double(xold),
     xnew = as.double(xnew)
@@ -82,8 +85,9 @@ smacofSSSammonC <- function(theData,
     iind = h$iind,
     jind = h$jind,
     weighted = weighted,
-    ordinal = ordinal
+    ordinal = ordinal,
+    ties = h$ties
   )
-  class(result) <- "smacofSSResult"
+  class(result) <- c("smacofSSResult", "smacofSSUOResult")
   return(result)
 }

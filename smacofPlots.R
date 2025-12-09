@@ -111,3 +111,22 @@ smacofDistDhatPlot <- function(h,
     }
   }
 }
+
+smacofResidualPlot <- function(h, 
+                               main = "ResidualPlot",
+                               probs = seq(0, 1, 0.25),
+                               qlines = TRUE,
+                               colpoints = "RED",
+                               collines = "BLUE",
+                               lwd = 2,
+                               cex = 1,
+                               pch = 16) {
+  res <- h$confdist - h$dhat
+  q <- quantile(res, probs)
+  n <- length(q)
+  e <- ecdf(res)
+  plot(e, col = colpoints, main = main)
+  for (i in 1:n) {
+    abline(v = q[i], col = collines, lwd = lwd)
+  }
+}

@@ -68,6 +68,7 @@ matrixPrint <- function(x,
 ```{r loadfiles, echo = FALSE}
 source("smacofSSSammonC.R")
 source("smacofSSSammonR.R")
+source("smacofSS.R")
 source("../smacofFlat/smacofSSData/ekmanData.R")
 source("../smacofFlat/smacofSSData/morseData.R")
 ```
@@ -100,7 +101,7 @@ monotone with the given dissimilarities.
 
 
 
-# Properties
+# Properties of Loss
 
 The usual stress loss function in smacof, due originally to @kruskal_64a and @kruskal_64b, is
 \begin{equation}
@@ -122,16 +123,20 @@ and thus
 \begin{equation}
 \sum w_{ij}\frac{(\delta_{ij}-d_{ij}(X))^2}{\delta_{ij}}\approx 4\sum w_{ij}(\sqrt{\delta_{ij}}-\sqrt{d_{ij}(X)})^2\label{eq-sqstress}
 \end{equation}
-More robust.
+The loss function on the right-hand side of \eqref{eq-sqstress}, which we will informally call
+*sqrt-stress*, is the special case of *rStress* with $r=\frac14$ (@deleeuw_groenen_mair_E_16a).
 
 # Algorithm
 
-In metric (ratio) MDS we minimize over $X$ for fixed $\Delta$. This is a standard metric scaling problem with weights $\smash{w_{ij}\delta_{ij}^{-1}}$. We use majorization steps to decrease loss. This is identical
-to the ratio sammon option in smacofx.
-In the non-metric case we use alternating least squares, i.e. we alternate majorization steps with 
+In metric (ratio) MDS we minimize over $X$ for fixed $\Delta$. This is a standard smacof problem with weights $\smash{\tilde w_{ij}:=w_{ij}\delta_{ij}^{-1}}$. We use majorization steps to decrease loss. This is identical to the *sammon* option in *smacofx*. Because the $\delta_{ij}$ are the same in each iteration, the same is true for the weights $\tilde w_{ij}$. Without going into details
+
+
+In the non-metric case we use block relaxation, i.e. we alternate majorization steps with 
 minimizing over $\Delta$, satisfying the ordinal constraints, for fixed $X$.
-As far as I know this has not been implemented before, and is somewhat non-standard.
-First, use the fact that $\sigma(\lambda X,\lambda\Delta)=\sigma(X,\Delta)$
+As far as I know this has not been implemented before, and is non-standard.
+The reason ...
+
+First, use the fact that 
 \begin{equation}
 \min_X\sigma(X,\Delta)=\min_X \sigma(X,\lambda\Delta),
 \end{equation}
@@ -142,26 +147,26 @@ that
 \end{equation}
 With this normalization we have
 \begin{equation}
-\sigma(X,\Delta)=1-2\mathop{\sum\sum}_{1\leq i<j\leq n}w_{ij}d_{ij}(X)+\mathop{\sum\sum}_{1\leq i<j\leq n}w_{ij}\frac{d_{ij}^2(X)}{\delta_{ij}}
+\sigma(X,\Delta)=1-2\mathop{\sum\sum}_{1\leq i<j\leq n}w_{ij}d_{ij}(X)+\mathop{\sum\sum}_{1\leq i<j\leq n}w_{ij}\frac{d_{ij}^2(X)}{\delta_{ij}}.
 \end{equation}
 Thus minimizing $\omega$ for fixed $X$ over non-negative, isotone and normalized $\Delta$ means minimizing
 the third term on the right. And this means minimizing a separable, differentiable, and strictly convex 
 function over a polyhedral convex set.
 
-Define the extended real valued function $f$ equal to
+To simplify notation we define the extended real valued function $f$ equal to
 \begin{equation}
 f(x):=\sum_{i=1}^nw_i\frac{y_i}{x_i}
 \end{equation}
-if $x_i>0$ for all $i$, and to $+\infty$ otherwise. Thus the effective domain $\text{dom}(f)$ is the interior of the positive orthant.  
+if $x_i>0$ for all $i$, and to $+\infty$ otherwise. Thus the effective domain $\text{dom}(f)$ is the interior of the positive orthant. In the context of Sammon Mapping the $y_i$ are squared distances and the $x_i$ are the transformed dissimilarities.
 
-Problem $\mathbf{P}$ is defined as minimization of $f$ over the intersection of the polyhedral convex cone $\mathcal{K}$ defined by $0<x_1\leq\cdots\leq x_n$ and the affine set $\mathcal{A}$ defined by $w'x=1$. We assume that all $w_i$ and all $y_i$ are positive, and that the $w_i$ add up to one. In the context of Sammon Mapping the $y_i$ are squared distances and the $x_i$ are the transformed dissimilarities. 
+The *Sammon Monotone Regression* or SMR problem is defined as minimization of $f$ over the intersection of the polyhedral convex cone $\mathcal{K}$ defined by $0<x_1\leq\cdots\leq x_n$ and the affine set $\mathcal{A}$ defined by $w'x=1$. We assume that all $w_i$ and all $y_i$ are positive, and that the $w_i$ add up to one.  
 
 The first and second partials of $f$ are
 \begin{align}
 \mathcal{D}_if(x)&=-w_i\frac{y_i}{x_i^2},\\
 \mathcal{D}_{ii}f(x)&=2w_i\frac{y_i}{x_i^3},
 \end{align}
-and $\mathcal{D}_{ik}f(x)=0$ if $i\neq k$. This shows $f$ is convex and twice differentiable on $\text{dom}(f)$, and thus on $\mathcal{K}\cap\mathcal{A}$.
+and $\mathcal{D}_{ik}f(x)=0$ if $i\neq k$. This shows $f$ is convex and twice differentiable on $\text{dom}(f)$, and thus on the intersection with $\mathcal{K}\cap\mathcal{A}$.
 
 First some preliminary results.
 
@@ -207,7 +212,7 @@ If $n=1$ then the minimizer $\overline x$ is equal to one and the minimum is $y$
 $w$ adds up to one, so $w=1$. Also $wx$ must be one, so $\overline x=1$.
 :::
 
-The following theorem is of prime importance, because it shows problem $\mathbf{P}$ can be solved with a  with a variation of the Pool Adjacent Violaters Algorithm (PAVA). For the details on PAVA, see for 
+The following theorem is of prime importance, because it shows the SMR problem can be solved with a variation of the Pool Adjacent Violaters Algorithm (PAVA). For the details on PAVA, see for 
 example @deleeuw_hornik_mair_A_09.
 
 ::: {#thm-pava}
@@ -242,26 +247,25 @@ But $y_i\geq y_{i+1}$ and $\overline x_i<\overline x_{i+1}$ implies
 and thus $\overline x$ cannot be the optimal solution.
 :::
 
-@thm-pava can be used to replace problem $\mathbf{P}$ of size $n$ with a problem $\tilde{\mathbf{P}}$of the 
-same type, but of size $n-1$. If $y_i\geq y_{i+1}$ we remove these two $y$-values and put the single value 
-$$
+@thm-pava can be used to replace an SMR problem of size $n$ with an SMR problem of size $n-1$. If $y_i\geq y_{i+1}$ we remove these two $y$-values and put the single value 
+\begin{equation}
 \tilde y_i:=\frac{w_iy_i+w_{i+1}y_{i+1}}{w_i+w_{i+1}}
-$$
+\end{equation}
 in their place. This new value gets the weight $\tilde w_i:=w_i+w_{i+1}$. 
 
 ::: {#thm-monreg}
 Suppose $\hat x$ solves the monotone regression problem for the weighted least squares norm
-$$
+\begin{equation}
 \hat x:=\mathop{\text{argmin}}_{x_1\leq\cdots\leq x_n}(x-y)'W(x-y)
-$$
+\end{equation}
 then
-$$
+\begin{equation}
 \overline x_i=\frac{\sqrt{\hat x_i}}{\sum_{k=1}^nw_k\sqrt{\hat x_k}}
-$$
-solves problem $\mathbf{P}$.
+\end{equation}
+solves the SMR problem.
 :::
 ::: {.proof}
-We use @thm-pava repeatedly until we have a problem $\mathbf{P}$ of size $r$ for which
+We use @thm-pava repeatedly until we have an SMR problem of size $r$ for which
 $\tilde y_1<\cdots<\tilde y_r$. We can use the same sequence of pooling adjacent
 violators as in least squares monotone regression, and we find the same weighted average pooled
 values in each step. When we have reduced the problem to a strictly increasing
@@ -269,7 +273,7 @@ $\tilde y$ sequence we apply @lem-fine (and if $r=1$ we apply @lem-one). We then
 expand each block again to a length equal to the number of averaged elements.
 :::
 
-A small example illustrates the PAVA variation. Start with $y$ equal to
+A small example illustrates our PAVA variation. Start with $y$ equal to
 $(1,2,3,1,2,3,5,1)$ and $w$ equal to $(1,1,1,1,1,1,1,1)$.
 Merge elements 3 and 4 to get $y=(1,2,2,2,3,5,1)$
 and $w=(1,1,2,1,1,1,1)$. Now merge elements 2, 3, and 4
@@ -279,109 +283,102 @@ to get $y=(1,2,3,3)$ and $w=(1,4,1,2)$ and finally merge
 $$
 \overline x=\frac{1}{1+4\sqrt{2}+3\sqrt{3}}(1, \sqrt{2}, \sqrt{2}, \sqrt{2}, \sqrt{2}, \sqrt{3}, \sqrt{3}, \sqrt{3})
 $$
-Remember that in the context of Sammon Mapping the least squares monotone regression has to be done on the squared distances.
+Remember that in the context of Sammon Mapping the least squares monotone regression is on the squared distances.
+
+# Software
+
+The github repository contains R and C versions of the smacofSSSammon program. 
+Both smacofSSSammonC() and smacofSSSammonR() have the same default values of the 
+parameters and the two programs are structured the same way. We iterate a 
+maximum of 1000 iterations until the change in stress from one iteration 
+to the next is less than `r 1e-6`. 
+
+A single majorization update is alternated
+with a single monotone regression. Note that the two steps in an iteration are
+different. In majorization we go one step towards minimizing $\sigma$ over
+$X$ for fixed $\Delta$, in the monotone regression we actually minimize
+$\sigma$ over $\Delta$ for given $X$.
+
+smacofSSSammonC() has a driver in R that sets up the MDS data structure (@deleeuw_E_25b). Both
+programs use a number of R utilities for data manipulation and to compute the initial configuration. One important difference is that the R version uses 
+gpava(), which is written in R, for monotone regression (@deleeuw_hornik_mair_A_09), while the R version uses the C routine monotone() from @busing_22.
 
 # Examples
 
 ## Results
 
+We use two classical MDS data sets, both rather small. The Ekman data (@ekman_54) are dissimilarities between 14 colors, the Morse data (@rothkopf_57) have 37 Morse code signals. We are only interested in the performance of the software in this paper, not in interpreting the resulting MDS configurations. Only the results for C version are given, because the R version gives exactly the same results.
+
 ```{r ekman, echo = FALSE}
-hen <- smacofSSSammonC(ekmanData, ordinal = FALSE, verbose = FALSE, eps = 1e-6)
-heo <- smacofSSSammonC(ekmanData, ordinal = TRUE, verbose = FALSE, eps = 1e-6)
+hen <- smacofSSSammonC(ekmanData, ordinal = FALSE)
+heo <- smacofSSSammonC(ekmanData, ordinal = TRUE)
 ```
-Numerical elastic scaling takes `r hen$niter` iterations to arrive at stress `r formatC(hen$stress, digits = 10, format = "f")`. For ordinal
+For Ekman numerical Sammon mapping takes `r hen$niter` iterations to arrive at stress `r formatC(hen$stress, digits = 10, format = "f")`. For ordinal
 we need `r heo$niter` iterations for stress `r formatC(heo$stress,digits = 10, format = "f")`. Since the ordinal fit is very good the
 sqrt-stress of \eqref{eq-sqstress} should be close to Sammon stress. It is `r formatC(4 * sum((sqrt(heo$dhat) - sqrt(heo$confdist))^2), digits = 10, format = "f")`.
+
 
 ```{r morse, echo = FALSE}
 hmn <- smacofSSSammonC(morseData, ordinal = FALSE, verbose = FALSE, eps = 1e-6)
 hmo <- smacofSSSammonC(morseData, ordinal = TRUE, verbose = FALSE, eps = 1e-6)
 ```
 
-For the Morse code data numerical elastic scaling takes `r hmn$niter` iterations to arrive at stress `r hmn$stress`, for ordinal we need `r hmo$niter` iterations for stress `r hmo$stress`. Because the fit is much worse than
-in the Ekman case we do not expect sqrt-stress to be close to Sammon stress. For the ordinal case final sqrt-stress is `r 4 * sum((sqrt(hmo$dhat) - sqrt(hmo$confdist))^2)`.
+For Morse numerical Sammon mapping takes `r hmn$niter` iterations to arrive at stress `r hmn$stress`, for ordinal we need `r hmo$niter` iterations for stress `r hmo$stress`. Because the fit is much worse than
+in the Ekman case we do not expect sqrt-stress to be that close to Sammon stress. For the ordinal case final sqrt-stress is `r 4 * sum((sqrt(hmo$dhat) - sqrt(hmo$confdist))^2)`.
 
 ## Timing
 
-The results of a comparison of the R and C implementations with microbenchmark (@mersmann_24) yields the times in microseconds in the following table.
+The results of a comparison of the R and C implementations of Sammon mapping with microbenchmark (@mersmann_24) yields the times in microseconds in the following tables.
 
 ```{r  mekman, echo = FALSE, cache = TRUE}
 xinit <- smacofTorgerson(ekmanData, ndim = 2)$conf
 suppressWarnings(microbenchmark(
-  smacofSSSammonR(ekmanData, xinit = xinit, eps = 1e-6, itmax = 1000, ordinal = FALSE, weighted = FALSE, verbose = FALSE),
-  smacofSSSammonC(ekmanData, xinit = xinit, eps = 1e-6, itmax = 1000, ordinal = FALSE, weighted = FALSE, verbose = FALSE),
-  smacofSSSammonR(ekmanData, xinit = xinit, eps = 1e-6, itmax = 1000, ordinal = TRUE, weighted = FALSE, verbose = FALSE),
-  smacofSSSammonC(ekmanData, xinit = xinit, eps = 1e-6, itmax = 1000, ordinal = TRUE, weighted = FALSE, verbose = FALSE)))
+  smacofSSSammonR(ekmanData, ordinal = FALSE),
+  smacofSSSammonC(ekmanData, ordinal = FALSE),
+  smacofSSSammonR(ekmanData, ordinal = TRUE),
+  smacofSSSammonC(ekmanData, ordinal = TRUE)))
 ```
 
-```{r microekman, echo = FALSE}
-a<-matrix(c(40.13, 1.44, 163.52, 4.06, 41.66, 1.53, 168.14, 4.39, 
-            44.38, 1.60, 172.10, 4.57, 43.84, 1.60, 169.50, 4.46,
-            45.11, 1.64, 172.28, 4.71, 109.41, 1.81, 242.27, 7.37),
-          4, 6)
-colnames(a) <- c("min", "lq", "mean", "median", "uq", "max")
-row.names(a) <- c("R/Numerical", "C/Numerical", "R/Ordinal", "C/Ordinal")
-a
-```
-Using median times we see that that C version is about 40 times as fast as the R version.
-
-```{r mmorse, echo = FALSE, cache = TRUE}
+```{r  mmorse, echo = FALSE, cache = TRUE}
 xinit <- smacofTorgerson(morseData, ndim = 2)$conf
 suppressWarnings(microbenchmark(
-  smacofSSSammonR(morseData, xinit = xinit, eps = 1e-6, itmax = 1000, ordinal = FALSE, weighted = FALSE, verbose = FALSE),
-  smacofSSSammonC(morseData, xinit = xinit, eps = 1e-6, itmax = 1000, ordinal = FALSE, weighted = FALSE, verbose = FALSE),
-  smacofSSSammonR(morseData, xinit = xinit, eps = 1e-6, itmax = 1000, ordinal = TRUE, weighted = FALSE, verbose = FALSE),
-  smacofSSSammonC(morseData, xinit = xinit, eps = 1e-6, itmax = 1000, ordinal = TRUE, weighted = FALSE, verbose = FALSE)))
+  smacofSSSammonR(morseData, ordinal = FALSE),
+  smacofSSSammonC(morseData, ordinal = FALSE),
+  smacofSSSammonR(morseData, ordinal = TRUE),
+  smacofSSSammonC(morseData, ordinal = TRUE)))
 ```
 
-Next, the timings for the Morse data.
-```{r micromorse, echo = FALSE}
-a<-matrix(c(80.71, 6.38, 711.81, 7.25,
-            85.50, 6.62, 744.80, 7.60,
-            92.21, 6.77, 767.76, 7.82, 
-            87.61, 6.71, 764.32, 7.74,
-            91.38, 6.80, 784.45, 7.83,
-            162.41, 10.96, 862.41, 11.35),
-          4, 6)
-colnames(a) <- c("min", "lq", "mean", "median", "uq", "max")
-row.names(a) <- c("R/Numerical", "C/Numerical", "R/Ordinal", "C/Ordinal")
-a
-```
-In the numerical case the C version is about 15 times as fast, in the ordinal case
-about 100 times. The huge difference in the ordinal case is likely due in large part to the different monotone regression routines used by the R and C programs.
+
 
 Of course these microbenchmark results depend on the default
 parameters of the programs (same in R and C), on the speed of my computer
 (Mac Mini with Apple M4 Pro, 64 GB of RAM, Tahoe 26.2, Apple clang 17.0.0), and on my programming habits (same in R and C).
 
-## Plots
+## Shepard Plots
+
+We use Shepard plots (@deleeuw_mair_C_15) to illustrate the difference between
+the solutions for classical Kruskal stress \eqref{eq-stress} and Sammon stress \eqref{eq-loss}. Both for
+Ekman and Morse we give the classical and Sammon solutions for the ordinal case, with the primary
+approach to ties.
 
 ```{r compplotE, fig.align = "center", fig.width = 8, fig.height = 8, echo = FALSE}
-par(pty="s")
-setwd("/Users/deleeuw/Desktop/recents/sammon")
-source("smacofSSSammonC.R")
-source("../smacofFlat/smacofSSdata/ekmanData.R")
-h1 <- smacofSSSammonC(ekmanData, ordinal = TRUE, verbose = FALSE)
-smacofShepardPlot(h1, main = "Shepard Plot Ekman, Sammon")
-dyn.unload("smacofSSSammon.so")
-setwd("/Users/deleeuw/Desktop/recents/smacofFlat")
-source("smacofSS.R")
-h2 <- smacofSS(ekmanData, ordinal = TRUE, verbose = FALSE)
-smacofShepardPlot(h2, main = "Shepard Plot Ekman, Kruskal")
+par(pty = "s")
+h1e <- smacofSSSammonC(ekmanData, ordinal = TRUE, verbose = FALSE)
+smacofShepardPlot(h1e, main = "Shepard Plot Ekman, Sammon")
+h2e <- smacofSS(ekmanData, ordinal = TRUE, verbose = FALSE)
+smacofShepardPlot(h2e, main = "Shepard Plot Ekman, Kruskal")
 ```
 ```{r compplotM, fig.align = "center", fig.width = 8, fig.height = 8, echo = FALSE}
-par(pty="s")
-setwd("/Users/deleeuw/Desktop/recents/sammon")
-source("smacofSSSammonC.R")
-source("../smacofFlat/smacofSSdata/morseData.R")
-h1 <- smacofSSSammonC(morseData, ordinal = TRUE, verbose = FALSE)
-smacofShepardPlot(h1, main = "Shepard Plot Morse, Sammon")
-dyn.unload("smacofSSSammon.so")
-setwd("/Users/deleeuw/Desktop/recents/smacofFlat")
-source("smacofSS.R")
-h2 <- smacofSS(morseData, ordinal = TRUE, verbose = FALSE)
-smacofShepardPlot(h2, main = "Shepard Plot Morse, Kruskal")
+par(pty = "s")
+h1m <- smacofSSSammonC(morseData, ordinal = TRUE, verbose = FALSE)
+smacofShepardPlot(h1m, main = "Shepard Plot Morse, Sammon")
+h2m <- smacofSS(morseData, ordinal = TRUE, verbose = FALSE)
+smacofShepardPlot(h2m, main = "Shepard Plot Morse, Kruskal")
 ```
+The examples show that the solutions are pretty similar, but definitely sammon MDS
+gives a better fit for the smaller dissimilarities and deemphasizes the larger ones.
+In the Ekman case the smallest dissimilarities are fitted almost perfectly
+
 \sectionbreak
 
 # References
