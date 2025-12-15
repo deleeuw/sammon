@@ -1,6 +1,6 @@
 #include "smacofSSsamelas.h"
 
-void smacofSSSammonMajorize(int* nobj, int* ndim, int* ndat, double* snew,
+void smacofSSElasticMajorize(int* nobj, int* ndim, int* ndat, double* snew,
                              int* iind, int* jind, int* weighted, double* wght,
                              double* vinv, double* edis, double* dhat,
                              double* xold, double* xnew) {

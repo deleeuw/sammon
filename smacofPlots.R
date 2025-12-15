@@ -115,18 +115,25 @@ smacofDistDhatPlot <- function(h,
 smacofResidualPlot <- function(h, 
                                main = "ResidualPlot",
                                probs = seq(0, 1, 0.25),
+                               dats = 1,
+                               type = "ecdf",
                                qlines = TRUE,
                                colpoints = "RED",
                                collines = "BLUE",
-                               lwd = 2,
+                               lwdpoints = 2,
+                               lwdlines = 2,
                                cex = 1,
                                pch = 16) {
   res <- h$confdist - h$dhat
+  res <- switch(dats, res, abs(res), res^2)
   q <- quantile(res, probs)
   n <- length(q)
-  e <- ecdf(res)
-  plot(e, col = colpoints, main = main)
+  e <- switch(type, 
+         "ecdf" = ecdf(res),
+         "density" = density(res)
+         )
+  plot(e, col = colpoints, main = main, lwd = lwdpoints)
   for (i in 1:n) {
-    abline(v = q[i], col = collines, lwd = lwd)
+    abline(v = q[i], col = collines, lwd = lwdlines)
   }
 }

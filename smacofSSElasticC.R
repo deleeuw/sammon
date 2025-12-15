@@ -5,7 +5,7 @@ source("smacofDataUtilities.R")
 source("smacofPlots.R")
 source("smacofTorgerson.R")
 
-smacofSSSammonC <- function(theData,
+smacofSSElasticC <- function(theData,
                      ndim = 2,
                      xinit = NULL,
                      ties = 1,
@@ -13,7 +13,7 @@ smacofSSSammonC <- function(theData,
                      eps = 1e-6,
                      digits = 10,
                      width = 15,
-                     verbose = FALSE,
+                     verbose = TRUE,
                      weighted = FALSE,
                      ordinal = FALSE) {
   if (is.null(xinit)) {
@@ -29,22 +29,23 @@ smacofSSSammonC <- function(theData,
   if (!weighted) {
     wght <- rep(1, ndat)
   }
-  dhat <- dhat / sum(wght * dhat)
   blks <- theData$blocks
   dold <- rep(0, ndat)
   for (k in 1:ndat) {
     dold[k] <- sqrt(sum((xold[iind[k], ] - xold[jind[k], ])^2))
   }
-  labd <- sum(wght * dold) / sum((wght / dhat) * dold^2)
+  rold <- dold / dhat
+  labd <- sum(wght * rold) / sum(wght * rold^2)
   dold <- labd * dold
   xold <- labd * xold
-  sold <- sum((wght / dhat) * (dhat - dold)^2 )
+  rold <- dold / dhat
+  sold <- sum(wght * (1 - rold)^2)
   snew <- 0.0
   xold <- as.vector(xold)
   xnew <- xold
   itel <- 1
   h <- .C(
-    "smacofSSSammonEngine",
+    "smacofSSElasticEngine",
     nobj = as.integer(nobj),
     ndim = as.integer(ndim),
     ndat = as.integer(ndat),
@@ -84,6 +85,6 @@ smacofSSSammonC <- function(theData,
     weighted = weighted,
     ordinal = ordinal
   )
-  class(result) <- "smacofSSResult"
+  class(result) <- c("smacofSSResult", "smacofSSElasticResult")
   return(result)
 }

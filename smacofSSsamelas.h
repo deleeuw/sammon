@@ -1,5 +1,5 @@
-#ifndef SMACOF_SS_ELASTIC_H
-#define SMACOF_SS_ELASTIC_H
+#ifndef SMACOF_SS_SAMELAS_H
+#define SMACOF_SS_SAMELAS_H
 
 #include <limits.h>
 #include <math.h>
@@ -43,6 +43,23 @@ void smacofSSSammonMonotone(int* ndat, int* ties, double* snew,
                        int* iind, int* jind, int* blks, double* edis,
                        double* dhat, double* wght);
 
+double smacofSSElasticLoss(int *ndat, double* edit, double *dhat, double *wght);
+
+void smacofSSElasticEngine(int* nobj, int* ndim, int* ndat, int* itel,
+                           int* ties, int* itmax, int* digits, int* width,
+                           int* verbose, int* ordinal, int* weighted,
+                           double* sold, double *snew, double* eps, int* iind,
+                           int* jind, int* blks, double* wght, double* edis,
+                           double* dhat, double* xold, double* xnew);
+
+void smacofSSElasticMajorize(int* nobj, int* ndim, int* ndat, double* snew, int* iind,
+                      int* jind, int* weighted, double* wght, double* vinv, double* edis,
+                      double* dhat, double* xold, double* xnew);
+
+void smacofSSElasticMonotone(int* ndat, int* ties, double* snew,
+                       int* iind, int* jind, int* blks, double* edis,
+                       double* dhat, double* wght);
+
 static inline void *xmalloc(const size_t size) {
   void *p = malloc(size);
   if (!p && size) {
@@ -82,4 +99,4 @@ static inline void *xrealloc(void *ptr, const size_t size) {
     }                                                                          \
   }
 
-#endif /* SMACOF_SS_ELASTIC_H */
+#endif /* SMACOF_SS_SAMELAS_H */

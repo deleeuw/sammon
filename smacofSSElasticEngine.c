@@ -1,6 +1,6 @@
 #include "smacofSSsamelas.h"
 
-void smacofSSSammonEngine(int* nobj, int* ndim, int* ndat, int* itel,
+void smacofSSElasticEngine(int* nobj, int* ndim, int* ndat, int* itel,
                            int* ties, int* itmax, int* digits, int* width,
                            int* verbose, int* ordinal, int* weighted,
                            double* sold, double* snew, double* eps, int* iind,
@@ -11,28 +11,26 @@ void smacofSSSammonEngine(int* nobj, int* ndim, int* ndat, int* itel,
     double* vinv = xmalloc(Nobj * (Nobj - 1) * sizeof(double) / 2);
     while (true) {
         for (int k = 0; k < Ndat; k++) {
-            wadj[k] = wght[k] / dhat[k];
+            wadj[k] = wght[k] / SQUARE(dhat[k]);
         }
         (void)smacofMPInverseV(nobj, ndat, iind, jind, wadj, vinv);
-        (void)smacofSSSammonMajorize(nobj, ndim, ndat, snew, iind, jind,
+        (void)smacofSSElasticMajorize(nobj, ndim, ndat, snew, iind, jind,
                                       weighted, wadj, vinv, edis, dhat, xold,
                                       xnew);
-        double smid = smacofSSSammonLoss(ndat, edis, dhat, wght);
+        double smid = smacofSSElasticLoss(ndat, edis, dhat, wght);
         if (*ordinal) {
             for (int k = 0; k < Ndat; k++) {
-                dhat[k] = SQUARE(edis[k]);
+                wadj[k] = wght[k] * SQUARE(edis[k]);
             }
-            (void)smacofSSSammonMonotone(ndat, ties, snew, iind, jind, blks,
+            for (int k = 0; k < Ndat; k++) {
+                dhat[k] = -1 / edis[k];
+            }
+            (void)smacofSSElasticMonotone(ndat, ties, snew, iind, jind, blks,
                                           edis, dhat, wadj);
-            double sum = 0.0;
             for (int k = 0; k < Ndat; k++) {
-                dhat[k] = sqrt(dhat[k]);
-                sum += wght[k] * dhat[k];
+                dhat[k] = -1 / dhat[k];
             }
-            for (int k = 0; k < Ndat; k++) {
-              dhat[k] /= sum;
-            }
-            *snew = smacofSSSammonLoss(ndat, edis, dhat, wght);
+            *snew = smacofSSElasticLoss(ndat, edis, dhat, wght);
         } else {
             *snew = smid;
         }
@@ -60,11 +58,11 @@ void smacofSSSammonEngine(int* nobj, int* ndim, int* ndat, int* itel,
     return;
 }
 
-double smacofSSSammonLoss(int* ndat, double* edis, double* dhat,
+double smacofSSElasticLoss(int* ndat, double* edis, double* dhat,
                            double* wght) {
     double loss = 0.0;
     for (int k = 0; k < *ndat; k++) {
-        loss += wght[k] * SQUARE(dhat[k] - edis[k]) / dhat[k];
+        loss += wght[k] * SQUARE(1 - edis[k] / dhat[k]);
     }
     return loss;
 }
