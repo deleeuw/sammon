@@ -1,4 +1,4 @@
-#include "smacofSSsamelas.h"
+#include "smacofSSSamelas.h"
 
 void smacofSSSammonMonotone(int* ndat, int* ties, double* snew, int* iind,
                              int* jind, int* blks, double* edis, double* dhat,

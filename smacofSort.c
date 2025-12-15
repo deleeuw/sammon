@@ -1,4 +1,4 @@
-#include "smacofSSsamelas.h"
+#include "smacofSSSamelas.h"
 
 struct quintuple {
     double value;

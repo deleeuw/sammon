@@ -1,4 +1,4 @@
-#include "smacofSSsamelas.h"
+#include "smacofSSSamelas.h"
 
 void smacofSSSammonEngine(int* nobj, int* ndim, int* ndat, int* itel,
                            int* ties, int* itmax, int* digits, int* width,

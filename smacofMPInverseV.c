@@ -1,4 +1,4 @@
-#include "smacofSSsamelas.h"
+#include "smacofSSSamelas.h"
 
 void smacofMPInverseV(int* nobj, int* ndat, int* iind, int* jind, double* wght,
                       double* vinv) {

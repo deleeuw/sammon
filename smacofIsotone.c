@@ -1,4 +1,4 @@
-#include "smacofSSsamelas.h"
+#include "smacofSSSamelas.h"
 
 void primaryApproach(const int* ndat, const int* blks, double* x, double* w,
                      double* d, int* iind, int* jind) {

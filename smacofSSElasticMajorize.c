@@ -1,4 +1,4 @@
-#include "smacofSSsamelas.h"
+#include "smacofSSSamelas.h"
 
 void smacofSSElasticMajorize(int* nobj, int* ndim, int* ndat, double* snew,
                              int* iind, int* jind, int* weighted, double* wght,
